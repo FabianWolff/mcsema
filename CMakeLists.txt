@@ -11,7 +11,8 @@ else()
   # WIN32 defaults to CXX11 by default, and setting it explicitly
   # confuses clang-cl, which will bail out with "unknown flag -std=g++11"
   # So only set this value for non-Win32 targets
-  set(CMAKE_CXX_STANDARD 11)
+  set(CMAKE_CXX_STANDARD 14)
+  add_compile_options(-std=c++14)
 endif()
 
 set(MCSEMA_GEN_DIR "${CMAKE_BINARY_DIR}/mcsema_generated")
@@ -33,7 +34,7 @@ if(NOT WIN32)
   # it assumes MSVC built protobuf from a visual studio project
   #... we build with custom cmake, so it will never be found
   #... but it should work for other OSes where we install from a package
-  set(CMAKE_CXX_STANDARD 11)
+  set(CMAKE_CXX_STANDARD 14)
 
   include (${CMAKE_SOURCE_DIR}/cmake/protobuf/CMakeLists.txt)
   set(PROTOBUF_INCLUDE_DIRS "${PROTOBUF_ROOT}/src")
@@ -179,6 +180,11 @@ add_custom_command(
     VERBATIM
 )
 
+# This is necessary if we want to depend on the generated Protobuf
+# files in subdirectory CMakeLists.txt files
+add_custom_target(generate-protobuf-files
+  DEPENDS ${PROTOBUF_OUTPUT_FILE_LIST})
+
 # mcsema source files
 add_executable(mcsema-lift
   ${CMAKE_SOURCE_DIR}/mcsema/Lift.cpp
@@ -244,6 +250,12 @@ if(NOT APPLE)
   add_subdirectory(${CMAKE_SOURCE_DIR}/mcsema/Arch/X86/Semantics/Bitcode)
 endif()
 add_subdirectory(${CMAKE_SOURCE_DIR}/mcsema/Arch/X86/Runtime)
+
+if(DEFINED BUILD_MCSEMA_DYNINST_DISASS)
+  if(BUILD_MCSEMA_DYNINST_DISASS EQUAL 1)
+    add_subdirectory(${CMAKE_SOURCE_DIR}/tools/mcsema_disass/dyninst/)
+  endif()
+endif()
 
 install(
   TARGETS mcsema-lift 
